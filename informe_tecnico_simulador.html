@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Informe Técnico Extendido - Simulador de Gestión de Memoria Virtual Paging OS</title>
+    <!-- Google Fonts -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&family=Outfit:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-dark: #080c14;
+            --glass-bg: rgba(15, 23, 42, 0.85);
+            --accent-indigo: #818cf8;
+            --accent-cyan: #22d3ee;
+            --accent-rose: #fb7185;
+            --accent-emerald: #34d399;
+            --accent-amber: #fbbf24;
+            --accent-purple: #a78bfa;
+            --text-main: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --border-light: rgba(255, 255, 255, 0.08);
+            --neon-blue: 0 0 20px rgba(129, 140, 248, 0.3);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            scroll-behavior: smooth;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            background-image:
+                radial-gradient(circle at 10% 10%, rgba(129, 140, 248, 0.12) 0%, transparent 35%),
+                radial-gradient(circle at 90% 90%, rgba(34, 211, 238, 0.08) 0%, transparent 40%),
+                linear-gradient(rgba(8, 12, 20, 0.95), rgba(8, 12, 20, 0.95)),
+                url('https://www.transparenttextures.com/patterns/carbon-fibre.png');
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
+            line-height: 1.7;
+            padding: 60px 20px;
+        }
+
+        .report-wrapper {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* --- Header --- */
+        header {
+            text-align: center;
+            margin-bottom: 80px;
+            padding: 60px 40px;
+            background: var(--glass-bg);
+            border-radius: 30px;
+            border: 1px solid var(--border-light);
+            box-shadow: var(--neon-blue);
+        }
+
+        .header-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 3.5rem;
+            font-weight: 800;
+            letter-spacing: -1px;
+            margin-bottom: 10px;
+            background: linear-gradient(to right, #fff, var(--accent-indigo), var(--accent-cyan));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .subtitle {
+            font-size: 1.4rem;
+            color: var(--text-secondary);
+            font-weight: 400;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .author-card {
+            margin-top: 40px;
+            display: inline-flex;
+            align-items: center;
+            gap: 15px;
+            padding: 12px 25px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 100px;
+            border: 1px solid var(--accent-indigo);
+            font-weight: 500;
+        }
+
+        .author-card i {
+            color: var(--accent-indigo);
+        }
+
+        /* --- Global Sections --- */
+        .section-box {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            border: 1px solid var(--border-light);
+            padding: 50px;
+            margin-bottom: 50px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .section-box::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: var(--accent-indigo);
+        }
+
+        h2 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 2.2rem;
+            margin-bottom: 30px;
+            color: var(--accent-cyan);
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        h2 i {
+            font-size: 1.8rem;
+        }
+
+        h3 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.6rem;
+            margin: 35px 0 20px;
+            color: var(--accent-indigo);
+        }
+
+        p {
+            margin-bottom: 20px;
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+        }
+
+        ul,
+        ol {
+            margin-left: 25px;
+            margin-bottom: 20px;
+            color: var(--text-secondary);
+        }
+
+        li {
+            margin-bottom: 10px;
+        }
+
+        /* --- Tech Stats --- */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 30px;
+            margin: 40px 0;
+        }
+
+        .stat-card {
+            background: rgba(0, 0, 0, 0.4);
+            padding: 30px;
+            border-radius: 16px;
+            border: 1px solid var(--border-light);
+            text-align: center;
+            transition: transform 0.3s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .stat-card i {
+            font-size: 2.5rem;
+            margin-bottom: 15px;
+        }
+
+        /* --- Algorithms Deep Dive --- */
+        .algo-list {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+
+        .algo-detail {
+            background: rgba(255, 255, 255, 0.02);
+            padding: 35px;
+            border-radius: 20px;
+            border: 1px solid var(--border-light);
+        }
+
+        .algo-detail h4 {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+            color: var(--text-main);
+            border-bottom: 1px solid var(--accent-indigo);
+            padding-bottom: 10px;
+            display: inline-block;
+        }
+
+        .theory-box {
+            background: rgba(34, 211, 238, 0.05);
+            padding: 20px;
+            border-radius: 12px;
+            border-left: 4px solid var(--accent-cyan);
+            margin: 20px 0;
+            font-style: italic;
+        }
+
+        /* --- Tables --- */
+        .table-wrapper {
+            overflow-x: auto;
+            margin: 40px 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.95rem;
+        }
+
+        th {
+            background: rgba(129, 140, 248, 0.1);
+            color: var(--accent-indigo);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding: 20px;
+            text-align: left;
+            border-bottom: 2px solid var(--accent-indigo);
+        }
+
+        td {
+            padding: 20px;
+            border-bottom: 1px solid var(--border-light);
+            color: var(--text-secondary);
+        }
+
+        tr:hover td {
+            color: #fff;
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        /* --- Visual Code Elements --- */
+        .code-snippet {
+            background: #000;
+            padding: 25px;
+            border-radius: 12px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+            color: #d1d5db;
+            margin: 30px 0;
+            border: 1px solid var(--border-light);
+            position: relative;
+        }
+
+        .code-tag {
+            position: absolute;
+            top: 0;
+            right: 20px;
+            background: var(--accent-rose);
+            padding: 4px 12px;
+            border-radius: 0 0 8px 8px;
+            font-size: 0.7rem;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 3px 10px;
+            background: var(--accent-rose);
+            color: #000;
+            font-size: 0.75rem;
+            font-weight: 800;
+            border-radius: 4px;
+            vertical-align: middle;
+            margin-left: 10px;
+        }
+
+        footer {
+            text-align: center;
+            padding: 60px 0;
+            border-top: 1px solid var(--border-light);
+            color: var(--text-secondary);
+        }
+
+        /* --- Timeline Icon Style --- */
+        .step-icon {
+            width: 40px;
+            height: 40px;
+            background: var(--accent-indigo);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            margin-bottom: 15px;
+        }
+
+        /* --- Terminal Log Demo --- */
+        .log-snippet {
+            background: #000;
+            border-radius: 8px;
+            padding: 15px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            border: 1px solid var(--border-light);
+            margin: 15px 0;
+        }
+
+        .log-line {
+            margin-bottom: 5px;
+            display: block;
+        }
+
+        .log-hit {
+            color: var(--accent-emerald);
+        }
+
+        .log-fault {
+            color: var(--accent-rose);
+        }
+
+        .log-sys {
+            color: var(--accent-cyan);
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="report-wrapper">
+        <header>
+            <div class="subtitle">Análisis de Arquitectura y Algoritmia</div>
+            <h1 class="header-title">Page Replace OS Simulator v3.5</h1>
+            <p>Un estudio detallado sobre la eficiencia de la MMU y políticas de reemplazo de marcos.</p>
+            <div class="author-card">
+                <i class="fa-solid fa-user-check"></i> Cesar Andersson Saire Hancco | Cód: 141158
+            </div>
+        </header>
+
+        <!-- Sección 1: Introducción -->
+        <section class="section-box">
+            <h2><i class="fa-solid fa-book-open"></i> 1. Fundamentos y Objetivos</h2>
+            <p>
+                La gestión de memoria virtual es uno de los pilares fundamentes de los Sistemas Operativos modernos.
+                Este informe detalla el diseño y la implementación de un simulador web interactivo que permite
+                visualizar el comportamiento de la unidad de gestión de memoria (MMU) ante fallos de página.
+            </p>
+            <p>
+                <strong>Objetivo General:</strong> Analizar comparativamente 8 algoritmos de reemplazo de páginas bajo
+                cargas de trabajo variables para determinar el impacto de las interrupciones del kernel en el
+                rendimiento general del sistema.
+            </p>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <i class="fa-solid fa-database" style="color:var(--accent-cyan)"></i>
+                    <h3>Memoria Simulada</h3>
+                    <p>Mapeo de Frames de 4KB en espacio de direcciones físico virtualizado.</p>
+                </div>
+                <div class="stat-card">
+                    <i class="fa-solid fa-bolt" style="color:var(--accent-rose)"></i>
+                    <h3>Page Faults</h3>
+                    <p>Detección de Interrupción #14 (PF) para trigger del planificador.</p>
+                </div>
+                <div class="stat-card">
+                    <i class="fa-solid fa-code" style="color:var(--accent-emerald)"></i>
+                    <h3>JS V8 Engine</h3>
+                    <p>Procesamiento offline de alta velocidad con resolución de microsegundos.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Sección 2: Arquitectura del Simulador -->
+        <section class="section-box">
+            <h2><i class="fa-solid fa-diagram-project"></i> 2. Arquitectura del Motor de Simulación</h2>
+            <p>
+                El software ha sido construido empleando una arquitectura de <strong>Single Page Application
+                    (SPA)</strong> basada en Vanilla JavaScript. El motor se divide en tres capas principales:
+            </p>
+            <ol>
+                <li><strong>Capa de Parsing:</strong> Valida y sanitiza la Cadena de Referencias y los Bits de Escritura
+                    (M) ingresados por el analista.</li>
+                <li><strong>Capa de Algoritmia:</strong> Implementa los 8 modelos matemáticos. Cada función de algoritmo
+                    es "pura", recibe una cadena de estado y marcos, y devuelve un objeto de historial completo.</li>
+                <li><strong>Capa de Renderizado Dinámico:</strong> Procesa la matriz de resultados y genera el DOM
+                    (Document Object Model) mediante técnicas de inserción masiva de nodos para mantener 60 FPS en la
+                    navegación.</li>
+            </ol>
+
+            <div class="code-snippet">
+                <div class="code-tag">Snippet: Kernel Logic</div>
+                <code>function runSimulation() {<br>
+                &nbsp;&nbsp;const refArr = parseArray(refInput.value);<br>
+                &nbsp;&nbsp;const results = RunMap[selectedAlgo](refArr, frames);<br>
+                &nbsp;&nbsp;renderEngine(results, frames, refArr);<br>
+                }</code>
+            </div>
+        </section>
+
+        <!-- Sección 3: Deep Dive Algoritmos -->
+        <section class="section-box">
+            <h2><i class="fa-solid fa-brain"></i> 3. Desglose Técnico de los 8 Algoritmos</h2>
+            <p>A continuación, se detalla la mecánica interna de cada una de las políticas implementadas en el
+                simulador:</p>
+
+            <div class="algo-list">
+
+                <!-- 1. FIFO -->
+                <div class="algo-detail">
+                    <h4>1. FIFO (First-In, First-Out)</h4>
+                    <p>Mantiene una cola cronológica de todas las páginas en memoria. La página en la cabeza de la cola
+                        es la primera en ser reemplazada.</p>
+                    <div class="theory-box">Nota: Es el único algoritmo que puede sufrir de la Anomalía de Belady. Se ha
+                        implementado un detector automático que comprueba este fenómeno en tiempo real.</div>
+                </div>
+
+                <!-- 2. OPT -->
+                <div class="algo-detail">
+                    <h4>2. ÓPTIMO (Algoritmo de Belady - MIN)</h4>
+                    <p>Reemplaza la página que no se usará por el periodo más largo en el futuro. Es un algoritmo
+                        predictivo imposible de implementar en sistemas reales, usado aquí como el estándar de
+                        perfección.</p>
+                </div>
+
+                <!-- 3. LRU -->
+                <div class="algo-detail">
+                    <h4>3. LRU (Least Recently Used)</h4>
+                    <p>Basado en la localidad temporal. Registra el instante del último acceso. El simulador utiliza una
+                        pila lógica para determinar qué marco ha permanecido inactivo por más tiempo.</p>
+                </div>
+
+                <!-- 4. LFU -->
+                <div class="algo-detail">
+                    <h4>4. LFU (Least Frequently Used)</h4>
+                    <p>Utiliza un contador de frecuencia. El sistema sacrifica la página con menor intensidad de uso.
+                        Útil para entornos con accesos repetitivos constantes.</p>
+                </div>
+
+                <!-- 5. MFU -->
+                <div class="algo-detail">
+                    <h4>5. MFU (Most Frequently Used)</h4>
+                    <p>Argumenta que la página con menor frecuencia acaba de entrar y no ha terminado su tarea.
+                        Sacrifica las páginas intensamente usadas.</p>
+                </div>
+
+                <!-- 6. RELOJ (Clock) -->
+                <div class="algo-detail" style="border-left: 5px solid var(--accent-amber);">
+                    <h4>6. RELOJ (Clock / Second Chance)</h4>
+                    <p>Versión eficiente de LRU. Utiliza un <strong>Bit de Referencia (U)</strong> y una manecilla
+                        circular. Si el bit es 1, se le da una segunda oportunidad y se pone a 0. Si es 0, se reemplaza.
+                    </p>
+                    <p style="color: var(--accent-cyan); font-size: 0.9rem;"><i class="fa-solid fa-clock"></i>
+                        Visualización: El simulador incluye una fila extra que rastrea la posición de la manecilla (Ptr)
+                        en cada paso temporal.</p>
+                </div>
+
+                <!-- 7. SEGUNDA OPORTUNIDAD -->
+                <div class="algo-detail">
+                    <h4>7. SEGUNDA OPORTUNIDAD (Estricta)</h4>
+                    <p>Funcionalmente parecida al Reloj pero implementada mediante una lista enlazada gestionada por
+                        software en el kernel, moviendo los nodos con Bit U=1 al final de la cola.</p>
+                </div>
+
+                <!-- 8. NRU -->
+                <div class="algo-detail" style="border-left: 5px solid var(--accent-rose);">
+                    <h4>8. NRU (Not Recently Used)</h4>
+                    <p>Divide las páginas en 4 clases basadas en los bits <strong>R (Referencia)</strong> y <strong>M
+                            (Modificado)</strong>.</p>
+                    <ul>
+                        <li>Clase 0: R=0, M=0</li>
+                        <li>Clase 1: R=0, M=1</li>
+                        <li>Clase 2: R=1, M=0</li>
+                        <li>Clase 3: R=1, M=1</li>
+                    </ul>
+                    <div class="theory-box">Input Especial: El simulador permite definir manualmente una cadena de bits
+                        M para testear la eficiencia en escenarios de escritura pesada.</div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- Sección 4: Comparativa Global -->
+        <section class="section-box">
+            <h2><i class="fa-solid fa-vial-circle-check"></i> 4. Métricas de Rendimiento Comparativo</h2>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Políticas</th>
+                            <th>Métrica Base</th>
+                            <th>Complejidad Hardware</th>
+                            <th>Eficiencia (%)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>FIFO</td>
+                            <td>Edad (Arribo)</td>
+                            <td>Baja (Counter)</td>
+                            <td>Media</td>
+                        </tr>
+                        <tr>
+                            <td>Óptimo</td>
+                            <td>Distancia Futura</td>
+                            <td>Imposible (Offline)</td>
+                            <td>100% (Teórico)</td>
+                        </tr>
+                        <tr>
+                            <td>LRU</td>
+                            <td>Tiempo Inactivo</td>
+                            <td>Muy Alta (Stack)</td>
+                            <td>Muy Alta</td>
+                        </tr>
+                        <tr>
+                            <td>Reloj / SC</td>
+                            <td>Bit de Uso (U)</td>
+                            <td>Baja (1 Bit/Page)</td>
+                            <td>Alta</td>
+                        </tr>
+                        <tr>
+                            <td>NRU</td>
+                            <td>Clases R|M</td>
+                            <td>Media (2 Bits)</td>
+                            <td>Alta</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Sección 5: Auditoría y Trazabilidad -->
+        <section class="section-box" style="border-right: 4px solid var(--accent-purple); border-left: none;">
+            <h2 style="color: var(--accent-purple);"><i class="fa-solid fa-microchip"></i> 5. Kernel Event Monitor:
+                Trazabilidad del Sistema</h2>
+            <p>
+                Una de las adiciones más críticas en la <strong>versión 3.5</strong> es la capacidad de auditar los
+                eventos internos del Kernel en cada ciclo de CPU. El <strong>Kernel Event Monitor</strong> simula un log
+                de sistema de bajo nivel:
+            </p>
+            <div class="log-snippet">
+                <span class="log-line log-sys">[+0.0ms] [FETCH] CPU solicitando acceso a Dirección Virtual (Pág
+                    7).</span>
+                <span class="log-line log-fault">[+0.5ms] [FAULT] MMU Miss: Página 7 no mapeada. Raising Interrupt
+                    #14.</span>
+                <span class="log-line log-sys">[+1.0ms] [SYSCALL] Kernel asignando Marco Físico 0 para nueva entrada
+                    PTE.</span>
+                <span class="log-line log-hit">[+5.0ms] [HIT] TLB Match: Página 2 hallada en Marco 1. Sin
+                    Interrupciones.</span>
+            </div>
+            <p>
+                Este monitor permite al estudiante observar fenómenos que usualmente son invisibles en tablas estáticas,
+                tales como los <strong>Context Switches</strong> masivos durante un Page Fault o los barridos asíncronos
+                de los bits 'R' en el algoritmo NRU.
+            </p>
+        </section>
+
+        <!-- Sección 6: UX y UI -->
+        <section class="section-box">
+            <h2><i class="fa-solid fa-display"></i> 6. Interfaz y Experiencia del Analista</h2>
+            <p>
+                La aplicación no es solo un motor de cálculo, sino una herramienta pedagógica. Se han incorporado las
+                siguientes características para mejorar la comprensión:
+            </p>
+            <ul>
+                <li><strong>Resaltado Dinámico de Acción:</strong> Los aciertos (Hits) brillan en verde esmeralda y los
+                    fallos
+                    (Faults) en rojo neón con pulsación visual de alta frecuencia para denotar la carga computacional de
+                    la interrupción #14.</li>
+                <li><strong>Subíndices de Estado Interno:</strong> Cada celda muestra datos ocultos como
+                    <code>t-N</code> (LRU), <code>f-N</code> (LFU) o <code>R|M</code> (NRU).
+                </li>
+                <li><strong>Event Log Terminal:</strong> Un panel estilo consola auditado por microsegundos que registra
+                    cada decisión de la MMU.</li>
+                <li><strong>Detector de Anomalía de Belady:</strong> Funcionalidad que detecta cuando FIFO
+                    falla matemáticamente ante el incremento de memoria física.</li>
+            </ul>
+        </section>
+
+        <!-- Conclusión -->
+        <section class="section-box"
+            style="border: 1px solid var(--accent-indigo); background: linear-gradient(180deg, rgba(129, 140, 248, 0.05), transparent);">
+            <div style="text-align:center;">
+                <i class="fa-solid fa-award"
+                    style="font-size: 3.5rem; color: var(--accent-amber); margin-bottom: 20px;"></i>
+                <h2 style="justify-content:center; color:#fff;">Conclusión Técnica Final</h2>
+                <p style="max-width: 800px; margin: 0 auto 30px;">
+                    El simulador demuestra que el algoritmo Óptimo sigue siendo el límite teórico imbatible, mientras
+                    que LRU y Reloj ofrecen el mejor balance entre overhead de hardware y tasa de hit para sistemas
+                    operativos de propósito general como Linux o Windows.
+                </p>
+                <div
+                    style="font-weight: 800; font-family: 'Outfit'; font-size: 1.3rem; border-top: 1px solid var(--border-light); padding-top: 25px; margin-top: 20px;">
+                    Cesar Andersson Saire Hancco
+                    <div style="font-weight: 400; font-size: 1rem; color: var(--accent-cyan);">Cód. Universitario 141158
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <footer>
+            <p>&copy; 2026 - Universidad Nacional de San Antonio Abad del Cusco (UNSAAC)</p>
+            <p style="font-size: 0.7rem; margin-top: 10px; opacity: 0.5;">Ingeniería de Sistemas - Sistemas Operativos I
+            </p>
+        </footer>
+    </div>
+
+</body>
+
+</html>

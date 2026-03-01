@@ -1,0 +1,1346 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulador de Reemplazo de Páginas OS</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;700&family=JetBrains+Mono:wght@400;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-base: #0f172a;
+            /* Slate 900 */
+            --bg-surface: rgba(30, 41, 59, 0.7);
+            /* Slate 800 transparent */
+            --bg-panel: rgba(15, 23, 42, 0.8);
+            --text-main: #f8fafc;
+            --text-secondary: #cbd5e1;
+            --accent-blue: #3b82f6;
+            --accent-indigo: #6366f1;
+            --accent-purple: #8b5cf6;
+            --accent-cyan: #06b6d4;
+            --accent-emerald: #10b981;
+            --accent-rose: #f43f5e;
+            --accent-amber: #f59e0b;
+            --glow-color: rgba(99, 102, 241, 0.15);
+            --border-light: rgba(255, 255, 255, 0.1);
+            --border-focus: rgba(99, 102, 241, 0.5);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-base);
+            color: var(--text-main);
+            line-height: 1.6;
+            min-height: 100vh;
+            overflow-x: hidden;
+            background-image:
+                radial-gradient(circle at 15% 50%, rgba(99, 102, 241, 0.15), transparent 25%),
+                radial-gradient(circle at 85% 30%, rgba(139, 92, 246, 0.15), transparent 25%);
+            background-attachment: fixed;
+        }
+
+        /* Glassmorphism Classes */
+        .glass-panel {
+            background: var(--bg-surface);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--border-light);
+            border-radius: 16px;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Layout */
+        .app-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 2rem;
+            min-height: 100vh;
+        }
+
+        @media (max-width: 1024px) {
+            .app-container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Sidebar / Controls */
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            height: fit-content;
+            position: sticky;
+            top: 2rem;
+        }
+
+        .header-box {
+            padding: 1.5rem;
+            text-align: center;
+        }
+
+        .header-box h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.8rem;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, #fff, var(--text-secondary));
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .header-box p {
+            font-size: 0.85rem;
+            color: var(--accent-cyan);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .control-group {
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.2rem;
+        }
+
+        .input-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .input-wrapper label {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        input[type="number"],
+        input[type="text"],
+        select {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--border-light);
+            color: white;
+            padding: 0.8rem 1rem;
+            border-radius: 8px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+            outline: none;
+        }
+
+        input:focus,
+        select:focus {
+            border-color: var(--accent-indigo);
+            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+            background: rgba(0, 0, 0, 0.4);
+        }
+
+        button.btn-primary {
+            background: linear-gradient(135deg, var(--accent-indigo), var(--accent-purple));
+            color: white;
+            border: none;
+            padding: 1rem;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            font-family: 'Inter', sans-serif;
+        }
+
+        button.btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(99, 102, 241, 0.3);
+        }
+
+        button.btn-secondary {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-secondary);
+            border: 1px solid var(--border-light);
+            padding: 0.8rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        button.btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+        /* Main Content Workspace */
+        .workspace {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .metrics-board {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        .metric-card {
+            padding: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .metric-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        .metric-icon.faults {
+            background: rgba(244, 63, 94, 0.1);
+            color: var(--accent-rose);
+            border: 1px solid rgba(244, 63, 94, 0.3);
+        }
+
+        .metric-icon.hits {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--accent-emerald);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .metric-icon.time {
+            background: rgba(6, 182, 212, 0.1);
+            color: var(--accent-cyan);
+            border: 1px solid rgba(6, 182, 212, 0.3);
+        }
+
+        .metric-icon.memory {
+            background: rgba(139, 92, 246, 0.1);
+            color: var(--accent-purple);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+        }
+
+        .metric-info h4 {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .metric-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+            color: white;
+        }
+
+        /* Simulation Canvas (Table) */
+        .simulation-canvas {
+            padding: 1.5rem;
+            overflow-x: auto;
+            min-height: 400px;
+        }
+
+        .canvas-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .canvas-header h2 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.4rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* The Grid Table */
+        .sim-table {
+            display: inline-flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .sim-row {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+
+        .sim-label {
+            width: 80px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            text-align: right;
+            padding-right: 12px;
+        }
+
+        .sim-cell {
+            width: 42px;
+            height: 42px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 600;
+            font-size: 1.1rem;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border-light);
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .sim-cell.reference {
+            background: rgba(59, 130, 246, 0.1);
+            border-color: rgba(59, 130, 246, 0.4);
+            color: var(--accent-blue);
+            margin-bottom: 8px;
+        }
+
+        .sim-cell.hit {
+            background: rgba(16, 185, 129, 0.1);
+            border-color: rgba(16, 185, 129, 0.5);
+            color: var(--accent-emerald);
+        }
+
+        .sim-cell.fault {
+            background: rgba(244, 63, 94, 0.15);
+            border-color: rgba(244, 63, 94, 0.6);
+            color: var(--accent-rose);
+            box-shadow: 0 0 15px rgba(244, 63, 94, 0.2);
+            animation: pulse-fault 2s infinite;
+        }
+
+        @keyframes pulse-fault {
+            0% {
+                box-shadow: 0 0 5px rgba(244, 63, 94, 0.2);
+            }
+
+            50% {
+                box-shadow: 0 0 15px rgba(244, 63, 94, 0.5);
+            }
+
+            100% {
+                box-shadow: 0 0 5px rgba(244, 63, 94, 0.2);
+            }
+        }
+
+        .sim-cell.empty {
+            color: transparent;
+        }
+
+        .sim-cell.replaced {
+            border-color: var(--accent-amber);
+            position: relative;
+        }
+
+        .sim-cell.replaced::after {
+            content: '';
+            position: absolute;
+            top: -2px;
+            right: -2px;
+            width: 8px;
+            height: 8px;
+            background: var(--accent-amber);
+            border-radius: 50%;
+        }
+
+        .sim-cell .sub-idx {
+            position: absolute;
+            bottom: 3px;
+            font-size: 0.55rem;
+            color: var(--accent-rose);
+            font-family: 'Inter', sans-serif;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+            line-height: 1;
+        }
+
+        .algo-description {
+            margin-top: 20px;
+            padding: 15px 20px;
+            background: rgba(0, 0, 0, 0.25);
+            border-left: 4px solid var(--accent-indigo);
+            border-radius: 6px;
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+            line-height: 1.7;
+        }
+
+        /* Result status per column */
+        .status-row .sim-cell {
+            height: 24px;
+            font-size: 0.7rem;
+            border: none;
+            background: transparent;
+            font-weight: 700;
+        }
+
+        .status-row .sim-cell.fault-icon {
+            color: var(--accent-rose);
+        }
+
+        .status-row .sim-cell.hit-icon {
+            color: var(--accent-emerald);
+        }
+
+        /* Event Log Styles */
+        .event-log-container {
+            margin-top: 30px;
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 12px;
+            border: 1px solid var(--border-light);
+            overflow: hidden;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .event-log-header {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 10px 15px;
+            font-size: 0.8rem;
+            color: var(--accent-indigo);
+            border-bottom: 1px solid var(--border-light);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .event-log-body {
+            max-height: 250px;
+            overflow-y: auto;
+            padding: 15px;
+            font-size: 0.85rem;
+            line-height: 1.6;
+        }
+
+        .log-entry {
+            margin-bottom: 8px;
+            padding-left: 20px;
+            position: relative;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            padding-bottom: 4px;
+        }
+
+        .log-entry::before {
+            content: '>';
+            position: absolute;
+            left: 0;
+            color: var(--accent-indigo);
+        }
+
+        .log-time {
+            color: var(--text-secondary);
+            margin-right: 10px;
+            font-size: 0.75rem;
+        }
+
+        .log-type-hit {
+            color: var(--accent-emerald);
+            font-weight: bold;
+        }
+
+        .log-type-fault {
+            color: var(--accent-rose);
+            font-weight: bold;
+        }
+
+        .log-type-sys {
+            color: var(--accent-cyan);
+        }
+
+        .log-type-kernel {
+            color: var(--accent-amber);
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="app-container">
+        <!-- Sidebar Controls -->
+        <aside class="sidebar">
+            <div class="glass-panel header-box">
+                <h1><i class="fa-solid fa-memory"></i> Page Replace OS</h1>
+                <p>Autor: Cesar Andersson Saire Hancco | Cód: 141158</p>
+            </div>
+
+            <div class="glass-panel control-group">
+                <div class="input-wrapper">
+                    <label for="algorithmSelect"><i class="fa-solid fa-microchip"></i> Algoritmo</label>
+                    <select id="algorithmSelect">
+                        <option value="ALL">>> Comparar Todos (Global)</option>
+                        <option value="FIFO">1. FIFO (First-In, First-Out)</option>
+                        <option value="OPT">2. Óptimo (Predictivo)</option>
+                        <option value="LRU">3. LRU (Least Recently Used)</option>
+                        <option value="LFU">4. LFU (Least Frequently Used)</option>
+                        <option value="MFU">5. MFU (Most Frequently Used)</option>
+                        <option value="CLOCK">6. Reloj (Clock / Usb bit)</option>
+                        <option value="SC">7. Segunda Oportunidad</option>
+                        <option value="NRU">8. NRU (Not Recently Used)</option>
+                    </select>
+                </div>
+
+                <div class="input-wrapper">
+                    <label for="frameCount"><i class="fa-solid fa-layer-group"></i> Número de Marcos (Frames)</label>
+                    <input type="number" id="frameCount" min="1" max="10" value="3">
+                </div>
+
+                <div class="input-wrapper">
+                    <label for="refString"><i class="fa-solid fa-code"></i> Cadena de Referencias</label>
+                    <input type="text" id="refString" value="7 0 1 2 0 3 0 4 2 3 0 3 2 1 2 0 1 7 0 1"
+                        placeholder="Ej: 7 0 1 2...">
+                    <div style="display:flex; gap: 8px; margin-top: 5px;">
+                        <button class="btn-secondary" style="flex:1" onclick="useExamplePattern()">Ejemplo
+                            Típico</button>
+                        <button class="btn-secondary" style="flex:1" onclick="generateRandom()">Aleatorio</button>
+                    </div>
+                </div>
+
+                <div class="input-wrapper" id="mStringWrapper">
+                    <label for="mString" style="color: var(--accent-amber);"><i class="fa-solid fa-pen-to-square"></i>
+                        Bits M de ESCR. (Solo NRU)</label>
+                    <input type="text" id="mString" value="0 1 0 0 1 1 0 0 1 0 0 0 1 0 0 1 0 1 0 0"
+                        placeholder="0 = Lectura, 1 = Escritura (vacío = random)">
+                </div>
+
+                <button class="btn-primary" onclick="runSimulation()">
+                    <i class="fa-solid fa-play"></i> Iniciar Simulación
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Workspace -->
+        <main class="workspace">
+
+            <!-- Interactive Metrics -->
+            <div class="metrics-board">
+                <div class="glass-panel metric-card">
+                    <div class="metric-icon faults"><i class="fa-solid fa-bolt"></i></div>
+                    <div class="metric-info">
+                        <h4>Fallos de Página</h4>
+                        <div class="metric-value" id="valFaults">--</div>
+                    </div>
+                </div>
+
+                <div class="glass-panel metric-card">
+                    <div class="metric-icon hits"><i class="fa-solid fa-check-circle"></i></div>
+                    <div class="metric-info">
+                        <h4>Aciertos / Ratio</h4>
+                        <div class="metric-value" id="valHits">--</div>
+                    </div>
+                </div>
+
+                <div class="glass-panel metric-card">
+                    <div class="metric-icon time"><i class="fa-solid fa-stopwatch"></i></div>
+                    <div class="metric-info">
+                        <h4>Tiempo JS (ms)</h4>
+                        <div class="metric-value" id="valTime">--</div>
+                    </div>
+                </div>
+
+                <div class="glass-panel metric-card">
+                    <div class="metric-icon memory"><i class="fa-solid fa-server"></i></div>
+                    <div class="metric-info">
+                        <h4>Memoria OS Simulada</h4>
+                        <div class="metric-value" id="valMem">--</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Simulation Grid / Engine Output -->
+            <div class="glass-panel simulation-canvas">
+                <div class="canvas-header">
+                    <h2 id="canvasTitle"><i class="fa-solid fa-table"></i> Vista de Iteración (Tabla de Reemplazo)</h2>
+                    <div style="font-size: 0.9rem; color: var(--text-secondary);">
+                        <span style="color:var(--accent-rose); font-weight:bold;">[F] Interrupción/Fallo</span> |
+                        <span style="color:var(--accent-emerald); font-weight:bold;">[H] Acierto Caché</span> |
+                        <span style="color:var(--accent-amber); font-weight:bold;">• Reemplazo Módificado</span>
+                    </div>
+                </div>
+
+                <div id="simulationOutput"
+                    style="width: 100%; min-height: 200px; display:flex; flex-direction:column; gap: 40px;">
+                    <div style="text-align:center; color: var(--text-secondary); margin-top: 50px;">
+                        <i class="fa-solid fa-wand-magic-sparkles"
+                            style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;"></i>
+                        <p>Configura los parámetros y presiona Iniciar Simulación.</p>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- LÓGICA DE ALGORITMOS JS CORE (OS SIMULATOR)-->
+    <!-- ========================================== -->
+    <script>
+        // Utils
+        function parseArray(str) {
+            return str.trim().split(/\s+/).map(x => parseInt(x, 10)).filter(x => !isNaN(x) && x >= 0);
+        }
+
+        function useExamplePattern() {
+            document.getElementById('refString').value = "7 0 1 2 0 3 0 4 2 3 0 3 2 1 2 0 1 7 0 1";
+        }
+
+        function generateRandom() {
+            let arr = [];
+            for (let i = 0; i < 20; i++) arr.push(Math.floor(Math.random() * 8)); // pages 0-7
+            document.getElementById('refString').value = arr.join(' ');
+        }
+
+        function updateMetrics(faults, hits, time_ms, frames, totalRefs) {
+            document.getElementById('valFaults').innerText = faults;
+            let ratio = totalRefs > 0 ? ((hits / totalRefs) * 100).toFixed(1) : 0;
+            document.getElementById('valHits').innerText = `${hits} (${ratio}%)`;
+            document.getElementById('valTime').innerText = time_ms.toFixed(3);
+            document.getElementById('valMem').innerText = (frames * 4) + ' KB';
+        }
+
+        // --- BELADY'S ANOMALY DETECTOR ---
+        function checkBeladyAnomaly(refArr) {
+            let previousFaults = Infinity;
+            let anomalyHtml = '';
+            for (let f = 1; f <= 7; f++) {
+                let res = simulate_FIFO(refArr, f);
+                if (f > 1 && res.totalFaults > previousFaults) {
+                    anomalyHtml = `
+                    <div style="background: rgba(245, 158, 11, 0.1); border-left: 4px solid var(--accent-amber); padding: 15px 20px; border-radius: 6px; margin-bottom: 25px;">
+                        <h4 style="color: var(--accent-amber); margin-bottom: 5px; font-family: 'Outfit';"><i class="fa-solid fa-triangle-exclamation"></i> ¡Anomalía de Belady Detectada Automáticamente!</h4>
+                        <p style="font-size: 0.9rem; color: var(--text-secondary);">El analizador en segundo plano del Kernel detectó que para esta cadena de referencias específica, asignar <strong>${f} marcos</strong> de memoria resulta en <strong>${res.totalFaults} fallos</strong>, lo cual es PEORES resultados que asignar <strong>${f - 1} marcos</strong> (${previousFaults} fallos) usando FIFO. Esto rompe la intuición lógica de "más RAM = menos fallos".</p>
+                    </div>`;
+                    break;
+                }
+                previousFaults = res.totalFaults;
+            }
+            return anomalyHtml;
+        }
+
+        // --- ALGORITHMS ENGINE ---
+        const AlgoDescriptions = {
+            "FIFO": "<strong>(First-In, First-Out)</strong>: Reemplaza la página que lleva más tiempo en memoria física. Implementación tradicional mediante una cola circular (Linked List con punteros Head/Tail en el Kernel). Sencillo pero métricamente ineficiente, siendo el único susceptible a la Anomalía de Belady. El subíndice <span style='color:var(--accent-rose)'>t N</span> indica el orden temporal progresivo de llegada.",
+            "ÓPTIMO": "<strong>(Algoritmo de Belady - MIN)</strong>: Reemplaza la página que <strong>no</strong> será referenciada por el mayor período de tiempo en el futuro. Teóricamente imposible de implementar en un SO real ('offline algorithm'); se usa exclusivamente como <em>baseline</em> predictivo de cota inferior en Benchmarking. El subíndice <span style='color:var(--accent-rose)'>d N</span> marca la distancia lógica de ciclos hacia el siguiente uso (∞ si no volverá a ser referenciada).",
+            "LRU": "<strong>(Least Recently Used)</strong>: Aproximación heurística 'online' fundamentada en la propiedad universal de Localidad Espacial y Temporal inherente en ejecución de arquitecturas von Neumann. Expulsa la página que lleva más tiempo inactiva. Altamente eficiente pero su implementación nativa restrictiva de hardware requiere contadores en cada Entrada de Tabla de Páginas (PTE), encareciendo enormemente la MMU. El subíndice <span style='color:var(--accent-rose)'>t-N</span> denota cronológicamente los ciclos inactivos.",
+            "LFU": "<strong>(Least Frequently Used)</strong>: El paradigma cambia métricas de edad por intensidad paramétrica de acceso. Cada marco mantiene acoplado un contador de frecuencia que la Interrupción del CPU incrementa en cada <em>Hit</em>. Problema intrínseco de trashing prolongado: páginas de inicialización de sistema logran alta frecuencia temprana y jamás son seleccionadas como víctimas a menos que se use Aging (deterioro). El subíndice <span style='color:var(--accent-rose)'>f N</span> indica su cuenta estadística de Accesos.",
+            "MFU": "<strong>(Most Frequently Used)</strong>: Patrón estadístico inverso a LFU. Argumenta axiomáticamente que aquella página con <strong>menor</strong> frecuencia existente apenas acaba de ser traída a la memoria, por lo que su ciclo de ejecución local no ha concluido y seguramente ganará más urgencia pronto, decidiendo en cambio eliminar a la página más madura y sobreutilizada con iteraciones agotadas. El subíndice <span style='color:var(--accent-rose)'>f N</span> indica su frecuencia absoluta.",
+            "RELOJ": "<strong>(Reloj de Aguja Circular / Clock)</strong>: Adaptación ingeniosa y pragmática del LRU implementada fundacionalmente en kernels de la familia Linux y FreeBSD. Libera al hardware de acarrear pesados timestamps aritméticos y emplea la simpleza asincrónica unaria de un ÚNICO Bit de Referencia ('Usage Bit' - U) incrustado en cada registro PTE. El daemon del Kernel simula una manecilla de reloj en un Ring buffer: si examina una página con U=1 la degrada a 0 dándole una oportunidad, si topa en su revisión asíncrona un U=0 procede al Page Out vitalicio. El subíndice <span style='color:var(--accent-rose)'>u N</span> reportará visualmente en todo momento este oscilante bit.",
+            "Segunda Oportunidad": "<strong>(Second Chance Estricta)</strong>: Variación homóloga puramente gemela equivalente métrico puro de la versión Clock. La variante técnica yace en que el OS mantiene estructurada una cola FIFO clásica en software en RAM en vez de un mapeo topológico circular de anillo buffer. Durante el Fallo (PF handler #14), el Kernel explora frontalmente la Cabeza: y ante la disyuntiva de hallar páginas portadoras de Bit U=1, les borra a '0', extirpándolas de cabeza y re-enlazándolas al extremo Trasero de la cola activa de manera cíclica invirtiendo ciclos de I/O lógico para perdonarla una nueva ronda. El subíndice <span style='color:var(--accent-rose)'>u N</span> muestra idénticamente el bit concesionario restrictivo temporal.",
+            "NRU": "<strong>(Not Recently Used - Page Classes)</strong>: Categoriza probabilísticamente su set de memoria física priorizando la salvación de páginas bajo la lectura de hardware de dos indicadores base MMU (PTE): <em>R</em> (Access) y <em>M</em> (Dirty Mod-Bit). Conformando inexorable las Clases Heurísticas 0 ('R=0 M=0'), 1 ('R=0 M=1'), 2 ('R=1 M=0') o la intocable Clase 3 ('R=1 M=1'). Una Alarma Interrupción del procesador limpia por barrido rutinario base los bits 'R' reactivándolos a cero temporalmente para dar simulación de des-uso gradual virtualizado. Al llegar Fallos de Acceso críticos, el kernel atacará escogiendo sus víctimas partiendo iterativamente desde las clases 0 extirpables hasta chocar superiormente con el fin de evadir cualquier sacrificio $M=1$; los cuales encadenarían astronómicas mermas de throughput debidas a engorrosas escrituras de regreso (Flush-Back Operations/Swaps) hacia el medio NVMe profundo antes de lograr limpiar la cuadrícula final de frame y liberársela a otra hebra peticionaría entrante. El subíndice visual especifica dinámicamente sus vitales tuplas banderas <span style='color:var(--accent-rose)'>R|M</span>."
+        };
+
+        // Return structure: { name, grid: [[int]], subGrid: [[string]], faults: [bool], repIdx: [int], hits, totalFaults, duration }
+
+        // 1. FIFO
+        function simulate_FIFO(ref, frames) {
+            let t0 = performance.now();
+            let grid = [], subGrid = [], faults = [], repIdx = [], actionIdx = [], events = [];
+            let memory = [];
+            let pointer = 0;
+            let totalFaults = 0, hits = 0;
+            let orderMap = {};
+            let seq = 1;
+
+            for (let i = 0; i < ref.length; i++) {
+                let page = ref[i];
+                let isFault = false;
+                let currentRep = -1;
+
+                events.push(`<span class="log-type-sys">[FETCH]</span> CPU solicitando acceso a Dirección Virtual (Pág ${page}).`);
+
+                if (!memory.includes(page)) {
+                    isFault = true;
+                    totalFaults++;
+                    events.push(`<span class="log-type-fault">[FAULT]</span> MMU Miss: Página ${page} no mapeada. Raising Interrupt #14 (Page Fault).`);
+                    if (memory.length < frames) {
+                        actionIdx.push(memory.length); // target index for initial fault
+                        events.push(`<span class="log-type-sys">[SYSCALL]</span> Kernel asignando Marco Físico ${memory.length} para nueva entrada PTE.`);
+                        memory.push(page);
+                    } else {
+                        currentRep = pointer;
+                        actionIdx.push(pointer);
+                        events.push(`<span class="log-type-kernel">[KERNEL]</span> Reemplazo FIFO: Expulsando víctima en Marco ${pointer}. Swapping Out page ${memory[pointer]}.`);
+                        memory[pointer] = page;
+                        pointer = (pointer + 1) % frames;
+                    }
+                    orderMap[page] = seq++;
+                } else {
+                    hits++;
+                    let hIdx = memory.indexOf(page);
+                    actionIdx.push(hIdx); // target index for hit
+                    events.push(`<span class="log-type-hit">[HIT]</span> TLB/Cache Match: Página ${page} hallada en Marco ${hIdx}. Sin Interrupciones.`);
+                }
+
+                faults.push(isFault);
+                repIdx.push(currentRep);
+                // Snapshot
+                let snap = [...memory];
+                while (snap.length < frames) snap.push(-1);
+                grid.push(snap);
+
+                let subSnap = snap.map(p => p !== -1 ? 't' + (orderMap[p] || 0) : '');
+                subGrid.push(subSnap);
+            }
+            let t1 = performance.now();
+            return { name: "FIFO", grid, subGrid, faults, repIdx, actionIdx, events, hits, totalFaults, duration: t1 - t0 };
+        }
+
+        // 2. OPTIMO
+        function simulate_OPT(ref, frames) {
+            let t0 = performance.now();
+            let grid = [], subGrid = [], faults = [], repIdx = [], actionIdx = [], events = [];
+            let memory = [];
+            let totalFaults = 0, hits = 0;
+
+            for (let i = 0; i < ref.length; i++) {
+                let page = ref[i];
+                let isFault = false, currentRep = -1;
+
+                events.push(`<span class="log-type-sys">[FETCH]</span> CPU solicitando acceso a Dirección Virtual (Pág ${page}).`);
+
+                if (!memory.includes(page)) {
+                    isFault = true;
+                    totalFaults++;
+                    events.push(`<span class="log-type-fault">[FAULT]</span> MMU Exception: Registro PTE inválido para página ${page}.`);
+                    if (memory.length < frames) {
+                        actionIdx.push(memory.length);
+                        events.push(`<span class="log-type-sys">[SYSCALL]</span> Kernel vinculando página ${page} a marco vacío ${memory.length}.`);
+                        memory.push(page);
+                    } else {
+                        let farthest = -1; // Index in ref array
+                        let victimMemIdx = -1; // Index in memory array
+                        for (let j = 0; j < memory.length; j++) {
+                            let nextUse = Infinity;
+                            for (let k = i + 1; k < ref.length; k++) {
+                                if (ref[k] === memory[j]) { nextUse = k; break; }
+                            }
+                            if (nextUse === Infinity) { // Page will not be used again
+                                victimMemIdx = j;
+                                farthest = Infinity; // Mark as farthest
+                                break;
+                            }
+                            if (nextUse > farthest) {
+                                farthest = nextUse;
+                                victimMemIdx = j;
+                            }
+                        }
+                        currentRep = victimMemIdx;
+                        events.push(`<span class="log-type-kernel">[OPT-POLICY]</span> Analizador predictivo detectó víctima en Marco ${victimMemIdx}. Próximo uso en t+${farthest === Infinity ? '∞' : farthest - i}.`);
+                        memory[currentRep] = page;
+                        actionIdx.push(currentRep);
+                    }
+                } else {
+                    hits++;
+                    let hIdx = memory.indexOf(page);
+                    actionIdx.push(hIdx);
+                    events.push(`<span class="log-type-hit">[HIT]</span> Página ${page} activa en Marco ${hIdx}.`);
+                }
+
+                faults.push(isFault);
+                repIdx.push(currentRep);
+                let snap = [...memory]; while (snap.length < frames) snap.push(-1); grid.push(snap);
+
+                // SubIndices for OPT: Distance to next use
+                let subSnap = snap.map(p => {
+                    if (p === -1) return '';
+                    let dist = Infinity;
+                    for (let k = i + 1; k < ref.length; k++) {
+                        if (ref[k] === p) { dist = k - i; break; }
+                    }
+                    return 'd' + (dist === Infinity ? '∞' : dist);
+                });
+                subGrid.push(subSnap);
+            }
+            let t1 = performance.now();
+            return { name: "ÓPTIMO", grid, subGrid, faults, repIdx, actionIdx, events, hits, totalFaults, duration: t1 - t0 };
+        }
+
+        // 3. LRU
+        function simulate_LRU(ref, frames) {
+            let t0 = performance.now();
+            let grid = [], subGrid = [], faults = [], repIdx = [], actionIdx = [], events = [];
+            let memory = []; // Array acts as a queue: [oldest, ..., newest] -> actually we maintain an array of objects or just track times.
+            let usageTime = {};
+            let totalFaults = 0, hits = 0;
+
+            for (let i = 0; i < ref.length; i++) {
+                let page = ref[i];
+                let isFault = false, currentRep = -1;
+
+                events.push(`<span class="log-type-sys">[FETCH]</span> Intento de lectura en Page Table Entry (Pág ${page}).`);
+
+                if (!memory.includes(page)) {
+                    isFault = true; totalFaults++;
+                    events.push(`<span class="log-type-fault">[FAULT]</span> Page Not Found in Physical RAM. Context Switch to Kernel.`);
+                    if (memory.length < frames) {
+                        actionIdx.push(memory.length);
+                        events.push(`<span class="log-type-sys">[SYSCALL]</span> Reservando Marco ${memory.length} para nueva entrada.`);
+                        memory.push(page);
+                    } else {
+                        let minTime = Infinity;
+                        let victimPage = -1;
+                        let victimMemIdx = -1;
+                        for (let j = 0; j < memory.length; j++) {
+                            let p = memory[j];
+                            if (usageTime[p] < minTime) {
+                                minTime = usageTime[p];
+                                victimPage = p;
+                                victimMemIdx = j;
+                            }
+                        }
+                        currentRep = victimMemIdx;
+                        actionIdx.push(currentRep);
+                        events.push(`<span class="log-type-kernel">[LRU-EVICT]</span> Página ${victimPage} inactiva desde ciclo ${minTime}. Sacrificando Marco ${currentRep}.`);
+                        memory[currentRep] = page;
+                        // No need to delete usageTime[victimPage] as it will be overwritten or ignored for pages not in memory
+                    }
+                } else {
+                    hits++;
+                    let hIdx = memory.indexOf(page);
+                    actionIdx.push(hIdx);
+                    events.push(`<span class="log-type-hit">[HIT]</span> Localidad temporal detectada: Página ${page} reutilizada en Marco ${hIdx}.`);
+                }
+
+                usageTime[page] = i; // T
+                faults.push(isFault); repIdx.push(currentRep);
+                let snap = [...memory]; while (snap.length < frames) snap.push(-1); grid.push(snap);
+
+                let subSnap = snap.map(p => p !== -1 ? 't-' + (i - usageTime[p]) : '');
+                subGrid.push(subSnap);
+            }
+            let t1 = performance.now();
+            return { name: "LRU", grid, subGrid, faults, repIdx, actionIdx, events, hits, totalFaults, duration: t1 - t0 };
+        }
+
+        // 4. LFU (Tie break with FIFO)
+        function simulate_LFU(ref, frames) {
+            let t0 = performance.now();
+            let grid = [], subGrid = [], faults = [], repIdx = [], actionIdx = [], events = [];
+            let memory = [];
+            let freq = {};
+            let order = {}; // entry time
+            let totalFaults = 0, hits = 0;
+
+            for (let i = 0; i < ref.length; i++) {
+                let page = ref[i];
+                let isFault = false, currentRep = -1;
+                events.push(`<span class="log-type-sys">[FETCH]</span> CPU request: Page ${page}.`);
+
+                if (!memory.includes(page)) {
+                    isFault = true; totalFaults++;
+                    events.push(`<span class="log-type-fault">[FAULT]</span> Interrupción #14: MMU registra fallo para página ${page}.`);
+                    if (memory.length < frames) {
+                        actionIdx.push(memory.length);
+                        events.push(`<span class="log-type-sys">[SYSCALL]</span> Kernel asignando Marco Físico ${memory.length} para nueva entrada PTE.`);
+                        memory.push(page);
+                    } else {
+                        let minF = Infinity, minOrder = Infinity;
+                        for (let j = 0; j < memory.length; j++) {
+                            let p = memory[j];
+                            if (freq[p] < minF || (freq[p] === minF && order[p] < minOrder)) {
+                                minF = freq[p]; minOrder = order[p]; currentRep = j;
+                            }
+                        }
+                        events.push(`<span class="log-type-kernel">[LFU]</span> Expulsando Marco ${currentRep} (Pág ${memory[currentRep]}) por baja frecuencia (f=${minF}).`);
+                        delete freq[memory[currentRep]]; // reset
+                        actionIdx.push(currentRep);
+                        memory[currentRep] = page;
+                    }
+                    freq[page] = 1;
+                    order[page] = i;
+                } else {
+                    hits++;
+                    freq[page]++;
+                    let hIdx = memory.indexOf(page);
+                    actionIdx.push(hIdx);
+                    events.push(`<span class="log-type-hit">[HIT]</span> Contador de frecuencia de Pág ${page} incrementado a ${freq[page]}.`);
+                }
+
+                faults.push(isFault); repIdx.push(currentRep);
+                let snap = [...memory]; while (snap.length < frames) snap.push(-1); grid.push(snap);
+
+                let subSnap = snap.map(p => p !== -1 ? 'f' + freq[p] : '');
+                subGrid.push(subSnap);
+            }
+            let t1 = performance.now();
+            return { name: "LFU", grid, subGrid, faults, repIdx, actionIdx, events, hits, totalFaults, duration: t1 - t0 };
+        }
+
+        // 5. MFU (Tie break with FIFO)
+        function simulate_MFU(ref, frames) {
+            let t0 = performance.now();
+            let grid = [], subGrid = [], faults = [], repIdx = [], actionIdx = [], events = [];
+            let memory = [];
+            let freq = {};
+            let order = {};
+            let totalFaults = 0, hits = 0;
+
+            for (let i = 0; i < ref.length; i++) {
+                let page = ref[i];
+                let isFault = false, currentRep = -1;
+                events.push(`<span class="log-type-sys">[FETCH]</span> CPU request: Page ${page}.`);
+
+                if (!memory.includes(page)) {
+                    isFault = true; totalFaults++;
+                    events.push(`<span class="log-type-fault">[FAULT]</span> Fallo de Página. Cambiando a Kernel Mode.`);
+                    if (memory.length < frames) {
+                        actionIdx.push(memory.length);
+                        events.push(`<span class="log-type-sys">[SYSCALL]</span> Kernel asignando Marco Físico ${memory.length} para nueva entrada PTE.`);
+                        memory.push(page);
+                    } else {
+                        let maxF = -1, minOrder = Infinity;
+                        for (let j = 0; j < memory.length; j++) {
+                            let p = memory[j];
+                            if (freq[p] > maxF || (freq[p] === maxF && order[p] < minOrder)) {
+                                maxF = freq[p]; minOrder = order[p]; currentRep = j;
+                            }
+                        }
+                        events.push(`<span class="log-type-kernel">[MFU]</span> Reemplazando Marco ${currentRep} (Pág ${memory[currentRep]}) por frecuencia dominante (f=${maxF}).`);
+                        delete freq[memory[currentRep]];
+                        actionIdx.push(currentRep);
+                        memory[currentRep] = page;
+                    }
+                    freq[page] = 1; order[page] = i;
+                } else {
+                    hits++;
+                    freq[page]++;
+                    let hIdx = memory.indexOf(page);
+                    actionIdx.push(hIdx);
+                    events.push(`<span class="log-type-hit">[HIT]</span> Página ${page} hallada. Recalculando MFU priority.`);
+                }
+
+                faults.push(isFault); repIdx.push(currentRep);
+                let snap = [...memory]; while (snap.length < frames) snap.push(-1); grid.push(snap);
+
+                let subSnap = snap.map(p => p !== -1 ? 'f' + freq[p] : '');
+                subGrid.push(subSnap);
+            }
+            let t1 = performance.now();
+            return { name: "MFU", grid, subGrid, faults, repIdx, actionIdx, events, hits, totalFaults, duration: t1 - t0 };
+        }
+
+        // 6. RELOJ (Clock) && 7. SC (Second Chance) (Functionally equivalent in page faults view)
+        function simulate_CLOCK(ref, frames, name = "RELOJ (Clock)") {
+            let t0 = performance.now();
+            let grid = [], subGrid = [], faults = [], repIdx = [], actionIdx = [], events = [];
+            let memory = Array(frames).fill(-1);
+            let useBit = Array(frames).fill(0);
+            let ptr = 0;
+            let totalFaults = 0, hits = 0;
+            let ptrData = [];
+
+            for (let i = 0; i < ref.length; i++) {
+                let page = ref[i];
+                let isFault = false, currentRep = -1;
+                let idx = memory.indexOf(page);
+
+                events.push(`<span class="log-type-sys">[FETCH]</span> MMU buscando traducción para Página ${page}.`);
+
+                if (idx === -1) {
+                    isFault = true; totalFaults++;
+                    events.push(`<span class="log-type-fault">[FAULT]</span> Bit de presencia 0. Iniciando búsqueda circular desde Ptr=${ptr}.`);
+                    while (true) {
+                        if (memory[ptr] === -1) { // Empty frame
+                            currentRep = -1; // No page replaced, just filled
+                            events.push(`<span class="log-type-sys">[SYSCALL]</span> Marco ${ptr} vacío. Asignando Pág ${page}.`);
+                            actionIdx.push(ptr);
+                            memory[ptr] = page;
+                            useBit[ptr] = 1;
+                            ptr = (ptr + 1) % frames;
+                            break;
+                        } else if (useBit[ptr] === 0) { // Found victim
+                            currentRep = ptr;
+                            events.push(`<span class="log-type-kernel">[CLOCK]</span> Marco ${ptr} (Pág ${memory[ptr]}) seleccionado para reemplazo (U=0).`);
+                            actionIdx.push(ptr);
+                            memory[ptr] = page;
+                            useBit[ptr] = 1;
+                            ptr = (ptr + 1) % frames;
+                            break;
+                        } else { // Give second chance
+                            events.push(`<span class="log-type-sys">[DEBUG]</span> Marco ${ptr} (Pág ${memory[ptr]}) tiene U=1. Otorgando Segunda Oportunidad (U=0).`);
+                            useBit[ptr] = 0;
+                            ptr = (ptr + 1) % frames;
+                        }
+                    }
+                } else {
+                    hits++;
+                    useBit[idx] = 1;
+                    actionIdx.push(idx);
+                    events.push(`<span class="log-type-hit">[HIT]</span> Página ${page} activa. Bit U del Marco ${idx} puesto en 1.`);
+                }
+
+                faults.push(isFault); repIdx.push(currentRep);
+                // Grid save
+                let snap = [...memory]; grid.push(snap);
+                let subSnap = [];
+                for (let j = 0; j < frames; j++) {
+                    subSnap.push(snap[j] === -1 ? '' : 'u' + useBit[j]);
+                }
+                subGrid.push(subSnap);
+
+                ptrData.push(`M${ptr}`);
+            }
+            let t1 = performance.now();
+            return { name: name, grid, subGrid, faults, repIdx, actionIdx, events, hits, totalFaults, duration: t1 - t0, extraBotRow: { label: 'Manecilla (Ptr)', data: ptrData } };
+        }
+
+        // 8. NRU (Not Recently Used) - Randomized Mod bit simulation
+        function simulate_NRU(ref, frames, mArr = null) {
+            let t0 = performance.now();
+            let grid = [], subGrid = [], faults = [], repIdx = [], actionIdx = [], events = [];
+            let memory = Array(frames).fill(-1);
+            let R = Array(frames).fill(0);
+            let M = Array(frames).fill(0);
+            let totalFaults = 0, hits = 0;
+
+            let finalMArr = [];
+
+            for (let i = 0; i < ref.length; i++) {
+                let page = ref[i];
+                let isFault = false, currentRep = -1;
+                let isWrite = (mArr && mArr.length > i) ? mArr[i] : (Math.random() > 0.7 ? 1 : 0);
+                finalMArr.push(isWrite);
+
+                events.push(`<span class="log-type-sys">[FETCH]</span> Pedido: Pág ${page} (${isWrite ? 'Write' : 'Read'}).`);
+
+                // Periodic R bit reset simulation (every 4 cycles)
+                if (i > 0 && i % 4 === 0) {
+                    R.fill(0);
+                    events.push(`<span class="log-type-kernel">[TIMER]</span> Interrupción de Reloj: Bits R reseteados a 0 por el Kernel.`);
+                }
+
+                let idx = memory.indexOf(page);
+                if (idx === -1) {
+                    isFault = true; totalFaults++;
+                    events.push(`<span class="log-type-fault">[FAULT]</span> Fallo de Página Detectado.`);
+                    let replaced = false;
+
+                    // 1. Fill empty
+                    let emptyIdx = memory.indexOf(-1);
+                    if (emptyIdx !== -1) {
+                        events.push(`<span class="log-type-sys">[ALLOC]</span> Asignando marco libre ${emptyIdx}.`);
+                        memory[emptyIdx] = page;
+                        actionIdx.push(emptyIdx);
+                        R[emptyIdx] = 1; M[emptyIdx] = isWrite;
+                        replaced = true;
+                    }
+
+                    // 2. Replace based on NRU classes
+                    if (!replaced) {
+                        let victim = -1;
+                        let minClass = 99;
+                        for (let c = 0; c <= 3; c++) {
+                            for (let k = 0; k < frames; k++) {
+                                let currClass = (R[k] * 2) + M[k];
+                                if (currClass === c) {
+                                    victim = k; break;
+                                }
+                            }
+                            if (victim !== -1) break;
+                        }
+                        currentRep = victim;
+                        actionIdx.push(victim);
+                        events.push(`<span class="log-type-kernel">[NRU]</span> Seleccionada víctima Clase ${(R[victim] * 2) + M[victim]} (Pág ${memory[victim]}) en Marco ${victim}.`);
+                        memory[victim] = page;
+                        R[victim] = 1; M[victim] = isWrite;
+                    }
+                } else {
+                    hits++;
+                    actionIdx.push(idx);
+                    R[idx] = 1;
+                    if (isWrite === 1) M[idx] = 1; // if it's a write access, upgrade to dirty
+                    events.push(`<span class="log-type-hit">[HIT]</span> Pág ${page} en Marco ${idx}. Bits actualizados: R=1, M=${M[idx]}.`);
+                }
+
+                faults.push(isFault); repIdx.push(currentRep);
+                let snap = [...memory]; grid.push(snap);
+
+                let subSnap = [];
+                for (let j = 0; j < frames; j++) {
+                    subSnap.push(snap[j] === -1 ? '' : 'R' + R[j] + '|M' + M[j]);
+                }
+                subGrid.push(subSnap);
+            }
+            let t1 = performance.now();
+
+            let retObj = { name: "NRU", grid, subGrid, faults, repIdx, actionIdx, events, hits, totalFaults, duration: t1 - t0 };
+            retObj.extraTopRow = { label: 'Acción M (0=R, 1=W)', data: finalMArr };
+            return retObj;
+        }
+
+        // --- RENDER DOM ENGINE ---
+        function renderEngine(resObj, frames, refArr) {
+            let html = `
+            <div style="margin-bottom: 30px;">
+                <h3 style="color: var(--accent-indigo); margin-bottom:15px; font-family:'Outfit';">Resultados: ${resObj.name}</h3>
+                <div class="sim-table">
+        `;
+
+            // Extra top row if present
+            if (resObj.extraTopRow) {
+                html += `<div class="sim-row"><div class="sim-label" style="color: var(--accent-amber);">${resObj.extraTopRow.label}</div>`;
+                for (let i = 0; i < refArr.length; i++) {
+                    html += `<div class="sim-cell" style="font-size: 0.85rem; height: 32px; border: 1px dashed var(--accent-amber); color: var(--accent-amber);">M=${resObj.extraTopRow.data[i]}</div>`;
+                }
+                html += `</div>`;
+            }
+
+            // 1. Row Ref Sequence
+            html += `<div class="sim-row"><div class="sim-label" style="color: var(--text-main);">t(x) Pag</div>`;
+            for (let i = 0; i < refArr.length; i++) {
+                html += `<div class="sim-cell reference">${refArr[i]}</div>`;
+            }
+            html += `</div>`;
+
+            // 2. Frames Rows (M1, M2, M3...)
+            for (let f = 0; f < frames; f++) {
+                html += `<div class="sim-row"><div class="sim-label">Marco ${f}</div>`;
+                for (let t = 0; t < refArr.length; t++) {
+                    let cellVal = resObj.grid[t][f];
+                    let subVal = (resObj.subGrid && resObj.subGrid[t]) ? resObj.subGrid[t][f] : '';
+                    let isReplacedHere = (resObj.repIdx[t] === f);
+                    let isTargetHere = (resObj.actionIdx[t] === f);
+                    let isFault = resObj.faults[t];
+
+                    let text = cellVal === -1 ? '' : cellVal;
+                    let subSpan = subVal !== '' ? `<span class="sub-idx">${subVal}</span>` : '';
+                    let cClass = cellVal === -1 ? 'empty' : '';
+
+                    if (isTargetHere) {
+                        if (isFault) {
+                            cClass += ' fault';
+                        } else {
+                            cClass += ' hit';
+                        }
+                    }
+                    if (isReplacedHere) cClass += ' replaced';
+
+                    html += `<div class="sim-cell ${cClass}">${text}${subSpan}</div>`;
+                }
+                html += `</div>`;
+            }
+
+            // Extra bottom row before Status (for Pointers)
+            if (resObj.extraBotRow) {
+                html += `<div class="sim-row"><div class="sim-label" style="color: var(--accent-cyan); font-weight: bold;">${resObj.extraBotRow.label}</div>`;
+                for (let i = 0; i < refArr.length; i++) {
+                    html += `<div class="sim-cell" style="font-size: 0.75rem; height: 28px; border: none; color: var(--accent-cyan);"><i class="fa-solid fa-arrow-up"></i> ${resObj.extraBotRow.data[i]}</div>`;
+                }
+                html += `</div>`;
+            }
+
+            // 3. Status row (Hit/Fault)
+            html += `<div class="sim-row status-row"><div class="sim-label">SysCall OS</div>`;
+            for (let t = 0; t < refArr.length; t++) {
+                if (resObj.faults[t]) {
+                    html += `<div class="sim-cell fault-icon"><i class="fa-solid fa-arrow-up"></i> F</div>`;
+                } else {
+                    html += `<div class="sim-cell hit-icon"><i class="fa-solid fa-check"></i> H</div>`;
+                }
+            }
+            html += `</div>`; // exit sim-table
+
+            // 4. Case Log (INTERNAL EVENTS)
+            if (resObj.events && resObj.events.length > 0) {
+                html += `
+                <div class="event-log-container">
+                    <div class="event-log-header">
+                        <span><i class="fa-solid fa-microchip"></i> Kernel Event Monitor - System Log</span>
+                        <span style="opacity: 0.6; font-size: 0.7rem;">PID: ${Math.floor(Math.random() * 9000) + 1000} | CPU: ${navigator.hardwareConcurrency || 4} threads</span>
+                    </div>
+                    <div class="event-log-body">
+                `;
+                resObj.events.forEach((evt, idx) => {
+                    let ts = (idx * 0.5).toFixed(1);
+                    html += `
+                        <div class="log-entry">
+                            <span class="log-time">[+${ts}ms]</span>
+                            ${evt}
+                        </div>
+                    `;
+                });
+                html += `</div></div>`;
+            }
+
+            let desc = typeof AlgoDescriptions !== 'undefined' ? AlgoDescriptions[resObj.name] || AlgoDescriptions[resObj.name.split(' ')[0]] || null : null;
+            if (desc) {
+                html += `<div class="algo-description"><i class="fa-solid fa-circle-info" style="color:var(--accent-indigo); margin-right: 8px;"></i> ${desc}</div>`;
+            }
+
+            html += `</div>`;
+            return html;
+        }
+
+        // --- MAIN CONTROLLER ---
+        function runSimulation() {
+            const outDiv = document.getElementById('simulationOutput');
+            const refStr = document.getElementById('refString').value;
+            const frames = parseInt(document.getElementById('frameCount').value, 10);
+            const algo = document.getElementById('algorithmSelect').value;
+
+            if (!refStr || frames < 1 || frames > 10) {
+                alert("Verifique las entradas: marcos válidos (1-10) y cadena no vacía.");
+                return;
+            }
+
+            const refArr = parseArray(refStr);
+            if (refArr.length === 0) return alert("Secuencia no válida.");
+
+            const mStr = document.getElementById('mString').value;
+            let mArr = mStr.trim().split(/\s+/).map(x => parseInt(x, 10)).filter(x => !isNaN(x));
+            if (mArr.length > 0) {
+                // Pad if short using 0
+                while (mArr.length < refArr.length) mArr.push(0);
+            }
+
+            outDiv.innerHTML = ''; // clear
+
+            const RunMap = {
+                'FIFO': (r, f) => simulate_FIFO(r, f),
+                'OPT': (r, f) => simulate_OPT(r, f),
+                'LRU': (r, f) => simulate_LRU(r, f),
+                'LFU': (r, f) => simulate_LFU(r, f),
+                'MFU': (r, f) => simulate_MFU(r, f),
+                'CLOCK': (r, f) => simulate_CLOCK(r, f, "RELOJ"),
+                'SC': (r, f) => simulate_CLOCK(r, f, "Segunda Oportunidad"),
+                'NRU': (r, f) => simulate_NRU(r, f, mArr.length > 0 ? mArr : null)
+            };
+
+            let results = [];
+
+            if (algo === 'ALL') {
+                document.getElementById('canvasTitle').innerHTML = '<i class="fa-solid fa-code-compare"></i> Comparativa Global de Algoritmos';
+                let names = Object.keys(RunMap);
+                let combinedHtml = '';
+                names.forEach(n => {
+                    let res = RunMap[n](refArr, frames);
+                    results.push(res);
+                });
+
+                // Generate Top Global Metrics Table
+                let metricsHtml = `
+                    <div class="glass-panel" style="margin-bottom: 40px; padding: 20px;">
+                        <h3 style="color: var(--accent-cyan); margin-bottom: 20px; font-family: 'Outfit', sans-serif;">
+                            <i class="fa-solid fa-chart-simple"></i> Informe de Métricas Globales
+                        </h3>
+                        <div style="overflow-x: auto;">
+                            <table style="width: 100%; border-collapse: collapse; text-align: left; font-family: 'JetBrains Mono', monospace; font-size: 0.9rem;">
+                                <thead>
+                                    <tr style="border-bottom: 1px solid var(--border-light); color: var(--text-secondary);">
+                                        <th style="padding: 12px;">Algoritmo</th>
+                                        <th style="padding: 12px;">Fallos de Página (SysCalls)</th>
+                                        <th style="padding: 12px;">Aciertos (Hits)</th>
+                                        <th style="padding: 12px;">Memoria Usada</th>
+                                        <th style="padding: 12px;">Fallo %</th>
+                                        <th style="padding: 12px;">Tiempo de Ejecución (ms)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                `;
+
+                // Sort results by lowest faults as primary metric for display purposes
+                let sortedResults = [...results].sort((a, b) => a.totalFaults - b.totalFaults);
+                let bestFaulCount = sortedResults[0].totalFaults;
+
+                sortedResults.forEach(r => {
+                    let isBest = r.totalFaults === bestFaulCount;
+                    let rowStyle = isBest ? `background: rgba(16, 185, 129, 0.1); border-left: 3px solid var(--accent-emerald);` : `border-bottom: 1px solid rgba(255,255,255,0.05);`;
+                    let faultPercentNum = ((r.totalFaults / refArr.length) * 100);
+                    let faultPercent = faultPercentNum.toFixed(1);
+
+                    metricsHtml += `
+                        <tr style="${rowStyle}">
+                            <td style="padding: 12px; font-weight: bold; color: ${isBest ? 'var(--accent-emerald)' : 'white'};">${r.name} ${isBest ? '<i class="fa-solid fa-trophy" style="font-size:0.8rem"></i>' : ''}</td>
+                            <td style="padding: 12px; color: var(--accent-rose);">${r.totalFaults}</td>
+                            <td style="padding: 12px; color: var(--accent-emerald);">${r.hits}</td>
+                            <td style="padding: 12px;">${frames * 4} KB</td>
+                            <td style="padding: 12px; width: 25%;">
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <span>${faultPercent}%</span>
+                                    <div style="flex-grow: 1; height: 6px; background: rgba(0,0,0,0.5); border-radius: 3px; overflow: hidden;">
+                                        <div style="width: ${faultPercentNum}%; height: 100%; background: ${isBest ? 'var(--accent-emerald)' : 'var(--accent-rose)'};"></div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td style="padding: 12px; color: var(--text-secondary);">${r.duration.toFixed(3)} ms</td>
+                        </tr>
+                    `;
+                });
+
+                metricsHtml += `
+                                </tbody>
+                            </table>
+                        </div>
+                        <p style="margin-top: 15px; font-size: 0.8rem; color: var(--text-secondary); font-family: 'Inter', sans-serif;">
+                            <em>Nota técnica: Cada Fallo de Página desencadena un Page Fault (Interrupción 14 en arquitectura x86), transfiriendo el control mediante un context switch pesado al Memory Manager del Kernel (SysCall implícita). Un menor % de fallos incrementa logarítmicamente el Throughput de la CPU.</em>
+                        </p>
+                    </div>
+                `;
+
+                combinedHtml += metricsHtml;
+
+                // Render each grid
+                results.forEach(res => {
+                    combinedHtml += renderEngine(res, frames, refArr);
+                });
+
+                outDiv.innerHTML = combinedHtml;
+
+                // Overall interactive metrics cards override for "ALL"
+                let totalTimeAll = results.reduce((sum, r) => sum + r.duration, 0);
+                updateMetrics(
+                    `${bestFaulCount} (Mín)`,
+                    Math.max(...results.map(x => x.hits)),
+                    totalTimeAll,
+                    frames,
+                    refArr.length
+                );
+
+                let anomalyCheck = checkBeladyAnomaly(refArr);
+                if (anomalyCheck) outDiv.innerHTML = anomalyCheck + outDiv.innerHTML;
+
+            } else {
+                document.getElementById('canvasTitle').innerHTML = '<i class="fa-solid fa-table"></i> Vista de Iteración (Tabla de Reemplazo)';
+                let res = RunMap[algo](refArr, frames);
+                outDiv.innerHTML = renderEngine(res, frames, refArr);
+                updateMetrics(res.totalFaults, res.hits, res.duration, frames, refArr.length);
+
+                let anomalyCheck = checkBeladyAnomaly(refArr);
+                if (anomalyCheck) outDiv.innerHTML = anomalyCheck + outDiv.innerHTML;
+            }
+        }
+    </script>
+
+</body>
+
+</html>

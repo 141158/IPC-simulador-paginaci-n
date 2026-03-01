@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Informe de Ingeniería: Sistema Avanzado de IPC (App 2)</title>
+    <!-- Modern Fonts -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700&family=JetBrains+Mono:wght@400;700&family=Outfit:wght@400;700&display=swap"
+        rel="stylesheet">
+    <!-- Mermaid.js para diagramas -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.4.0/dist/mermaid.min.js"></script>
+    <style>
+        :root {
+            --bg-base: #09090b;
+            /* Very dark background */
+            --bg-surface: rgba(24, 24, 27, 0.6);
+            /* Slightly lighter, translucent */
+            --bg-panel: rgba(39, 39, 42, 0.4);
+            --text-main: #f8fafc;
+            --text-secondary: #94a3b8;
+            --accent-blue: #3b82f6;
+            --accent-purple: #8b5cf6;
+            --accent-cyan: #06b6d4;
+            --accent-green: #10b981;
+            --glow-color: rgba(139, 92, 246, 0.15);
+            --border-color: rgba(255, 255, 255, 0.08);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-base);
+            color: var(--text-main);
+            line-height: 1.7;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Ambient Background Glows */
+        .ambient-glow-1 {
+            position: fixed;
+            top: -20vh;
+            left: -10vw;
+            width: 70vw;
+            height: 70vh;
+            background: radial-gradient(circle, var(--glow-color) 0%, transparent 60%);
+            border-radius: 50%;
+            z-index: -1;
+            filter: blur(100px);
+            animation: float 15s infinite alternate ease-in-out;
+        }
+
+        .ambient-glow-2 {
+            position: fixed;
+            bottom: -20vh;
+            right: -10vw;
+            width: 60vw;
+            height: 60vh;
+            background: radial-gradient(circle, rgba(6, 182, 212, 0.1) 0%, transparent 60%);
+            border-radius: 50%;
+            z-index: -1;
+            filter: blur(100px);
+            animation: float 20s infinite alternate-reverse ease-in-out;
+        }
+
+        @keyframes float {
+            0% {
+                transform: translate(0, 0) scale(1);
+            }
+
+            100% {
+                transform: translate(30px, 50px) scale(1.1);
+            }
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 60px 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 60px;
+        }
+
+        h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 3.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #fff, var(--text-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -1px;
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            color: var(--accent-cyan);
+            font-family: 'JetBrains Mono', monospace;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        h2,
+        h3 {
+            font-family: 'Outfit', sans-serif;
+            margin-top: 40px;
+            margin-bottom: 20px;
+        }
+
+        h2 {
+            font-size: 2rem;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        h2::before {
+            content: '';
+            display: inline-block;
+            width: 8px;
+            height: 32px;
+            background: linear-gradient(to bottom, var(--accent-blue), var(--accent-purple));
+            border-radius: 4px;
+        }
+
+        .glass-card {
+            background: var(--bg-surface);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 40px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.3s ease;
+        }
+
+        .glass-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        p {
+            margin-bottom: 1.5rem;
+            color: var(--text-secondary);
+            font-size: 1.05rem;
+        }
+
+        strong {
+            color: #fff;
+        }
+
+        /* Code aesthetics */
+        code {
+            font-family: 'JetBrains Mono', monospace;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 0.9em;
+            color: var(--accent-cyan);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .code-block-wrapper {
+            background: #000;
+            border-radius: 12px;
+            overflow: hidden;
+            margin: 20px 0;
+            border: 1px solid var(--border-color);
+        }
+
+        .code-header {
+            background: #111;
+            padding: 10px 20px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            color: #666;
+            border-bottom: 1px solid #222;
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .code-header .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        .dot.red {
+            background: #ef4444;
+        }
+
+        .dot.yellow {
+            background: #eab308;
+        }
+
+        .dot.green {
+            background: #22c55e;
+        }
+
+        pre {
+            margin: 0;
+            padding: 20px;
+            overflow-x: auto;
+        }
+
+        /* Tables layout */
+        .table-container {
+            overflow-x: auto;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            margin: 30px 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--bg-panel);
+        }
+
+        th,
+        td {
+            padding: 16px 20px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        th {
+            background: rgba(255, 255, 255, 0.03);
+            font-family: 'Outfit', sans-serif;
+            font-weight: 600;
+            color: #fff;
+            letter-spacing: 0.5px;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover td {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        /* Timeline for Execution Flow */
+        .timeline {
+            position: relative;
+            padding-left: 40px;
+            margin-top: 30px;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 10px;
+            height: 100%;
+            width: 2px;
+            background: linear-gradient(to bottom, var(--accent-blue), var(--accent-purple), transparent);
+        }
+
+        .timeline-step {
+            position: relative;
+            margin-bottom: 40px;
+        }
+
+        .timeline-step::before {
+            content: '';
+            position: absolute;
+            left: -35px;
+            top: 6px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--bg-base);
+            border: 2px solid var(--accent-cyan);
+            box-shadow: 0 0 10px var(--accent-cyan);
+        }
+
+        .timeline-content h3 {
+            margin-top: 0;
+            color: var(--accent-cyan);
+            font-size: 1.3rem;
+        }
+
+        /* Mermaid Graph container */
+        .mermaid-wrapper {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            border: 1px solid var(--border-color);
+            margin: 30px 0;
+        }
+
+        .badges {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+
+        .badge {
+            background: rgba(59, 130, 246, 0.1);
+            color: var(--accent-blue);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            border: 1px solid rgba(59, 130, 246, 0.3);
+        }
+
+        .badge.purple {
+            color: var(--accent-purple);
+            border-color: rgba(139, 92, 246, 0.3);
+            background: rgba(139, 92, 246, 0.1);
+        }
+
+        .badge.green {
+            color: var(--accent-green);
+            border-color: rgba(16, 185, 129, 0.3);
+            background: rgba(16, 185, 129, 0.1);
+        }
+    </style>
+    <script>
+        mermaid.initialize({
+            theme: 'dark',
+            themeVariables: {
+                primaryColor: '#1e293b',
+                primaryTextColor: '#f8fafc',
+                primaryBorderColor: '#3b82f6',
+                lineColor: '#8b5cf6',
+                secondaryColor: '#0f172a',
+                tertiaryColor: '#1e1b4b'
+            }
+        });
+    </script>
+</head>
+
+<body>
+
+    <div class="ambient-glow-1"></div>
+    <div class="ambient-glow-2"></div>
+
+    <div class="container">
+        <header>
+            <div class="subtitle">Análisis Técnico y Operativo</div>
+            <h1>Sistema Avanzado de IPC</h1>
+            <p>Informe en profundidad de la aplicación de Comunicación Inter-Procesos (App 2)</p>
+            <p style="margin-top: 5px; color: var(--accent-cyan); font-weight: 500;">Autor: Cesar Andersson Saire Hancco
+                - Código: 141158</p>
+            <div class="badges" style="justify-content: center; margin-top: 20px;">
+                <span class="badge">C++ Native Win32</span>
+                <span class="badge purple">Kernel Operations</span>
+                <span class="badge green">Process Management</span>
+            </div>
+        </header>
+
+        <section class="glass-card">
+            <h2>Resumen Ejecutivo</h2>
+            <p>
+                La aplicación <code>ipc_app.exe</code> es una sofisticada demostración de <strong>Comunicación
+                    Inter-Procesos (IPC)</strong> a nivel de sistema operativo en entornos Windows. Su objetivo
+                principal es ilustrar cómo dos procesos independientes (un Padre y un Hijo) con espacios de memoria
+                aislados pueden coordinarse e intercambiar datos de forma segura y eficiente.
+            </p>
+            <p>
+                A diferencia de sistemas básicos, esta aplicación implementa un enfoque dual, contrastando dos
+                paradigmas fundamentales del OS:
+                <strong>Tuberías Anónimas (Pipes)</strong> mediadas por el Kernel para el intercambio sincronizado, y
+                <strong>Memoria Compartida con Nombre (Named Shared Memory)</strong> para transferencias de ultra-baja
+                latencia mapeadas directamente en la RAM.
+            </p>
+        </section>
+
+        <section class="glass-card">
+            <h2>Arquitectura del Sistema</h2>
+            <p>
+                El modelo se basa en una jerarquía Padre-Hijo. El proceso Padre actúa como orquestador: configura los
+                canales de comunicación, reserva los bloques de memoria física y despacha al proceso Hijo delegados,
+                transmitiendo los manejadores (Handles) necesarios como argumentos de línea de comandos.
+            </p>
+
+            <div class="mermaid-wrapper">
+                <div class="mermaid">
+                    graph TD
+                    Padre["Proceso Padre (Orquestador)"]
+                    Hijo["Proceso Hijo (Receptor)"]
+                    RAM[/"Memoria Física Secundaria (RAM)"/]
+                    Kernel(("Espacio del Kernel\n(Object Manager)"))
+
+                    Padre -- "Crea" --> Hijo
+
+                    subgraph IPC_Mechanisms [Mecanismos IPC]
+                    Pipe["Tubería Anónima (Pipe)\nUnidireccional"]
+                    SHM["Memoria Compartida\n(Local\\PruebaMemoriaCompartida_P6)"]
+                    end
+
+                    Padre -- "WriteFile()" --> Pipe
+                    Pipe -- "ReadFile()" --> Hijo
+                    Pipe -. "Buffer reside en" .-> Kernel
+
+                    Padre -- "MapViewOfFile" --> SHM
+                    Hijo -- "MapViewOfFile" --> SHM
+                    SHM -. "Mapeado directo a" .-> RAM
+                </div>
+            </div>
+        </section>
+
+        <section class="glass-card">
+            <h2>Comparativa de Mecanismos IPC Implementados</h2>
+            <p>
+                El software expone empíricamente las diferencias entre los buffers en Modo Kernel y el acceso directo a
+                páginas de memoria física.
+            </p>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Característica</th>
+                            <th>Tuberías Anónimas (Pipes)</th>
+                            <th>Memoria Compartida (Shared Memory)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>API de Creación</strong></td>
+                            <td><code>CreatePipe()</code></td>
+                            <td><code>CreateFileMappingA()</code> / <code>OpenFileMappingA()</code></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Residencia de Datos</strong></td>
+                            <td>Espacio de direcciones del Kernel (Non-paged pool).</td>
+                            <td>Páginas físicas RAM mapeadas al espacio virtual de ambos procesos.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Flujo &amp; Bloqueo</strong></td>
+                            <td>Flujo de Bytes (stream). Soporta I/O Bloqueante de forma nativa.</td>
+                            <td>Bloque estático de bytes. Requiere sincronización externa (ej. Mutex) si hay escrituras
+                                concurrentes.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Sobrecarga (Performance)</strong></td>
+                            <td>Alta. Requiere Cambio de Contexto al Kernel (`SYSCALL`) y copia de memoria
+                                (User-&gt;Kernel-&gt;User).</td>
+                            <td>Casi nula tras la inicialización. Acceso directo a memoria con latencia a nivel de caché
+                                L1/L2/L3.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Identificación</strong></td>
+                            <td>Transmisión de <em>Handles</em> heredados al hijo.</td>
+                            <td>Acceso global mediante Identificador con prefijo (<code>Local\NombreObjeto</code>).</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="glass-card">
+            <h2>Flujo de Ejecución Profundo</h2>
+            <p>A continuación se detalla la secuencia algorítmica y las intervenciones del Kernel durante la ejecución,
+                monitoreando paso a paso el ciclo de vida del IPC.</p>
+
+            <div class="timeline">
+                <div class="timeline-step">
+                    <div class="timeline-content">
+                        <h3>1. Creación de Canales (Modo Kernel)</h3>
+                        <p>El proceso Padre invoca la Win32 API para establecer los vectores de comunicación.</p>
+                        <ul>
+                            <li><strong>Pipes:</strong> Se instancian dos pares de pipes (Lectura/Escritura) asegurando
+                                que los atributos de seguridad <code>SECURITY_ATTRIBUTES</code> permitan la herencia de
+                                handles (<code>bInheritHandle = TRUE</code>).</li>
+                            <li><strong>Object Manager:</strong> El núcleo intercepta <code>CreateFileMappingA</code>.
+                                Se crea un objeto de tipo "Section" referenciado en el namespace global como
+                                <code>Local\PruebaMemoriaCompartida_P6</code>, delegando 1024 bytes de páginas virtuales
+                                apoyadas por el archivo de paginación del SO.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="timeline-step">
+                    <div class="timeline-content">
+                        <h3>2. Despacho del Proceso Hijo</h3>
+                        <p>El padre serializa los IDs de los Handles requeridos (representados como enteros de 64 bits)
+                            en la línea de comandos y ejecuta la syscall encargada de bifurcar procesos.</p>
+                        <div class="code-block-wrapper">
+                            <div class="code-header">
+                                <div class="dot red"></div>
+                                <div class="dot yellow"></div>
+                                <div class="dot green"></div>
+                                <span>C++ | Win32 API</span>
+                            </div>
+                            <pre><code>std::string cmd = std::string(exePath) + " child " + 
+                  std::to_string((long long)hReadPipeChild) + " " + 
+                  std::to_string((long long)hWritePipeChild);
+CreateProcessA(NULL, (LPSTR)cmd.c_str(), NULL, NULL, TRUE, ...);</code></pre>
+                        </div>
+                        <p><strong>Operación del SO:</strong> El Memory Manager establece un nuevo contexto VAD (Virtual
+                            Address Descriptor). Se asigna un PID único. El Object Manager copia las entradas marcadas
+                            como heredables de la <em>Tabla de Handles</em> del Padre a la del Hijo.</p>
+                    </div>
+                </div>
+
+                <div class="timeline-step">
+                    <div class="timeline-content">
+                        <h3>3. Eventos de Cambio de Contexto (Context Switch)</h3>
+                        <p>La aplicación realiza un seguimiento proactivo de los cambios de contexto del CPU. Cuando el
+                            Hijo ejecuta un <code>ReadFile()</code> bloqueante en el Pipe vacío, ocurre un <strong
+                                style="color:var(--accent-purple)">Context Switch</strong> crítico:</p>
+                        <p><em>Razón de interrupción:</em> Solicitud I/O Bloqueante.<br />
+                            <em>Acción de hardware/software:</em> El Kernel guarda los registros actuales (EIP, ESP,
+                            EAX, etc.) en el <em>Thread Control Block (TCB)</em> del flujo hijo. El estado del hilo muta
+                            de <code>RUNNING</code> a <code>WAITING</code>. El Planificador (Scheduler) asigna el ciclo
+                            de reloj libre al proceso Padre o a otro proceso <code>READY</code> de mayor prioridad en la
+                            cola del SO.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="timeline-step">
+                    <div class="timeline-content">
+                        <h3>4. Intercambio por Memoria Compartida</h3>
+                        <p>A diferencia de la Tubería, la validación del objeto de memoria es delegada sin la sobrecarga
+                            del paso de mensajes continuo. El proceso Padre pre-carga en la RAM el dato ("Datos secretos
+                            en RAM...").</p>
+                        <p>El proceso Hijo emplea <code>OpenFileMappingA</code> apuntando al mismo Namespace. Tras una
+                            validación por el <em>Security Reference Monitor (SRM)</em>, <code>MapViewOfFile()</code>
+                            asigna las páginas físicas involucradas a direcciones virtuales continuas en el <em>User
+                                Space</em> del hijo.</p>
+                        <p><strong>Cero Syscalls:</strong> El Hijo lee, procesa y responde sobrescribiendo la misma
+                            dirección de memoria usando operaciones de puntero clásicas (<code>memcpy</code>), operando
+                            a velocidad nativa de la memoria subyacente de la arquitectura x86_64.</p>
+                    </div>
+                </div>
+
+                <div class="timeline-step">
+                    <div class="timeline-content">
+                        <h3>5. Limpieza y Terminación</h3>
+                        <p>Un aspecto imperativo registrado por el app es la prevención de fugas de recursos
+                            (<em>Resource Leaks</em>). Ambos procesos invocan <code>UnmapViewOfFile</code> retirando las
+                            páginas mapeadas de su tabla de páginas, seguido de sucesivas llamadas a
+                            <code>CloseHandle</code>.</p>
+                        <p>Cuando el contador de referencias interno del Object Manager para cada entidad (Section,
+                            Pipe, Process, Thread) alcanza cero, los destructores en el espacio del Kernel reclaman las
+                            estructuras subyacentes físicamente.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <footer
+            style="text-align: center; margin-top: 50px; color: var(--text-secondary); font-size: 0.9em; border-top: 1px solid var(--border-color); padding-top: 20px;">
+            <p>Generado proceduralmente en base al código fuente final del sistema.</p>
+            <p>Módulo de Sistema Operativo Avanzado y Arquitectura de Sistemas.</p>
+        </footer>
+    </div>
+</body>
+
+</html>
